@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TelemetryType {
+  temperature
+  presence
+}
+
+model TelemetryEvent {
+  id        String        @id @default(cuid())
+  deviceId  String
+  type      TelemetryType
+  roomId    String?
+  value     Float?
+  payload   Json
+  timestamp BigInt
+  createdAt DateTime      @default(now())
+
+  @@index([deviceId, timestamp])
+  @@index([type, timestamp])
+  @@map("telemetry_events")
+}
+
+model ConsumerCheckpoint {
+  id        String   @id @default(cuid())
+  consumer  String
+  deviceId  String
+  eventType String
+  timestamp BigInt
+  updatedAt DateTime @updatedAt
+
+  @@unique([consumer, deviceId, eventType])
+  @@index([consumer, eventType])
+  @@map("consumer_checkpoints")
+}
+
+model Temperature5m {
+  id         String   @id @default(cuid())
+  bucketTime DateTime @map("bucket_time")
+  deviceId   String
+  avgTemp    Float    @map("avg_temp")
+  sampleCount Int     @default(0) @map("sample_count")
+  updatedAt  DateTime @updatedAt
+
+  @@unique([bucketTime, deviceId])
+  @@index([bucketTime])
+  @@map("temperature_5m")
+}
+
+model RoomUsageDaily {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  roomId     String
+  usageCount Int      @default(0) @map("usage_count")
+  updatedAt  DateTime @updatedAt
+
+  @@unique([date, roomId])
+  @@index([date])
+  @@map("room_usage_daily")
+}
