@@ -1,7 +1,7 @@
 name: Build Service
 on:
   workflow_run:
-    workflows: ["Setup Service"] # Chỉ chạy khi workflow Setup Service chạy xong, lấy được image_tag từ đó
+    workflows: ["Test Service"]
     types:
       - completed
 
