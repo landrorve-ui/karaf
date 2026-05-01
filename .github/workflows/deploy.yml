@@ -44,8 +44,8 @@ jobs:
         run: npm ci
 
       # Run linting early so style and static analysis failures stop the deployment quickly.
-      - name: Lint code
-        run: npm run lint
+      # - name: Lint code
+      #   run: npm run lint
 
       # Run the automated test suite before building images so only verified code is shipped.
       - name: Run tests

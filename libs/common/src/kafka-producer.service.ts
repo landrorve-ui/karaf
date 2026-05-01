@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Kafka, Producer } from 'kafkajs';
 import { getDlqTopic, getKnownKafkaTopics } from './events';
 import { ensureKafkaTopics } from './kafka-topics';
@@ -19,10 +24,11 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     const topics = getKnownKafkaTopics();
-    await ensureKafkaTopics('iot-producer-admin', [
-      ...topics,
-      ...topics.map((topic) => getDlqTopic(topic)),
-    ], this.configService.kafka.brokers);
+    await ensureKafkaTopics(
+      'iot-producer-admin',
+      [...topics, ...topics.map((topic) => getDlqTopic(topic))],
+      this.configService.kafka.brokers,
+    );
     await this.producer.connect();
   }
 

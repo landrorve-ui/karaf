@@ -1,9 +1,10 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import {
-  KafkaProducerService,
-  KAFKA_TOPICS,
-  logOperation,
-} from '@lib/common';
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { KafkaProducerService, KAFKA_TOPICS, logOperation } from '@lib/common';
 
 interface MockDevice {
   deviceId: string;
@@ -47,20 +48,32 @@ export class MockDataService implements OnModuleInit, OnModuleDestroy {
             const temperature = this.temperatureFor(startedTick, index);
 
             return [
-              this.kafkaProducer.emit(KAFKA_TOPICS.devicePing, device.deviceId, {
-                deviceId: device.deviceId,
-                timestamp,
-              }),
-              this.kafkaProducer.emit(KAFKA_TOPICS.telemetryTemperature, device.deviceId, {
-                deviceId: device.deviceId,
-                value: temperature,
-                timestamp,
-              }),
-              this.kafkaProducer.emit(KAFKA_TOPICS.telemetryPresence, device.deviceId, {
-                deviceId: device.deviceId,
-                roomId: device.roomId,
-                timestamp,
-              }),
+              this.kafkaProducer.emit(
+                KAFKA_TOPICS.devicePing,
+                device.deviceId,
+                {
+                  deviceId: device.deviceId,
+                  timestamp,
+                },
+              ),
+              this.kafkaProducer.emit(
+                KAFKA_TOPICS.telemetryTemperature,
+                device.deviceId,
+                {
+                  deviceId: device.deviceId,
+                  value: temperature,
+                  timestamp,
+                },
+              ),
+              this.kafkaProducer.emit(
+                KAFKA_TOPICS.telemetryPresence,
+                device.deviceId,
+                {
+                  deviceId: device.deviceId,
+                  roomId: device.roomId,
+                  timestamp,
+                },
+              ),
             ];
           }),
         );

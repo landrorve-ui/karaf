@@ -11,7 +11,9 @@ export interface KafkaTopicHandler<T> {
   handle: (event: T, payload: EachMessagePayload) => Promise<void>;
 }
 
-export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy {
+export abstract class KafkaConsumerBase
+  implements OnModuleInit, OnModuleDestroy
+{
   protected readonly logger = new Logger(this.constructor.name);
   private readonly consumer: Consumer;
 
@@ -35,18 +37,24 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
   async onModuleInit(): Promise<void> {
     const handlers = this.handlers();
     const topics = handlers.map((handler) => handler.topic);
-    await ensureKafkaTopics(`${this.clientId}-admin`, [
-      ...topics,
-      ...topics.map((topic) => getDlqTopic(topic)),
-    ], this.configSvc.kafka.brokers);
+    await ensureKafkaTopics(
+      `${this.clientId}-admin`,
+      [...topics, ...topics.map((topic) => getDlqTopic(topic))],
+      this.configSvc.kafka.brokers,
+    );
     await this.consumer.connect();
     for (const handler of handlers) {
-      await this.consumer.subscribe({ topic: handler.topic, fromBeginning: false });
+      await this.consumer.subscribe({
+        topic: handler.topic,
+        fromBeginning: false,
+      });
     }
 
     await this.consumer.run({
       eachMessage: async (payload) => {
-        const handler = handlers.find((candidate) => candidate.topic === payload.topic);
+        const handler = handlers.find(
+          (candidate) => candidate.topic === payload.topic,
+        );
         if (!handler) {
           return;
         }
@@ -61,11 +69,14 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
     payload: EachMessagePayload,
   ): Promise<void> {
     const startedAt = Date.now();
-    const requestId = this.header(payload, 'requestId') ?? this.header(payload, 'x-request-id');
+    const requestId =
+      this.header(payload, 'requestId') ?? this.header(payload, 'x-request-id');
     let deviceId: string | undefined;
 
     try {
-      const parsed = JSON.parse(payload.message.value?.toString('utf8') ?? '{}') as unknown;
+      const parsed = JSON.parse(
+        payload.message.value?.toString('utf8') ?? '{}',
+      ) as unknown;
       const event = handler.validate(parsed);
       if (event && typeof event === 'object' && 'deviceId' in event) {
         const candidate = (event as { deviceId?: unknown }).deviceId;
@@ -94,15 +105,22 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
     }
   }
 
-  private async sendToDlq(payload: EachMessagePayload, error: unknown): Promise<void> {
-    await this.producer.emit(getDlqTopic(payload.topic), payload.message.key?.toString() ?? 'unknown', {
-      topic: payload.topic,
-      partition: payload.partition,
-      offset: payload.message.offset,
-      error: error instanceof Error ? error.message : String(error),
-      payload: payload.message.value?.toString('utf8') ?? null,
-      timestamp: Date.now(),
-    });
+  private async sendToDlq(
+    payload: EachMessagePayload,
+    error: unknown,
+  ): Promise<void> {
+    await this.producer.emit(
+      getDlqTopic(payload.topic),
+      payload.message.key?.toString() ?? 'unknown',
+      {
+        topic: payload.topic,
+        partition: payload.partition,
+        offset: payload.message.offset,
+        error: error instanceof Error ? error.message : String(error),
+        payload: payload.message.value?.toString('utf8') ?? null,
+        timestamp: Date.now(),
+      },
+    );
   }
 
   private header(payload: EachMessagePayload, key: string): string | undefined {

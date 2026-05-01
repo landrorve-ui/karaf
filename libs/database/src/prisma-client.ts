@@ -1,1 +1,5 @@
-export { PrismaClient, Prisma, TelemetryType } from '../../../node_modules/.prisma/client';
+export {
+  PrismaClient,
+  Prisma,
+  TelemetryType,
+} from '../../../node_modules/.prisma/client';

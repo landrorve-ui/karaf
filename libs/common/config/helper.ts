@@ -7,7 +7,8 @@ export function getStringEnv(key: string, fallback?: string): string {
 }
 
 export function getNumberEnv(key: string, fallback?: number): number {
-  const val = process.env[key] || (fallback !== undefined ? String(fallback) : undefined);
+  const val =
+    process.env[key] || (fallback !== undefined ? String(fallback) : undefined);
   if (val === undefined) {
     throw new Error(`Environment variable ${key} is required`);
   }
@@ -23,6 +24,5 @@ export function getStringArrayEnv(key: string, fallback?: string[]): string[] {
   if (val === undefined) {
     throw new Error(`Environment variable ${key} is required`);
   }
-  return val.split(',').map(s => s.trim());
+  return val.split(',').map((s) => s.trim());
 }
-

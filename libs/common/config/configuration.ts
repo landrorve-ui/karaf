@@ -1,9 +1,8 @@
-import { getNumberEnv, getStringArrayEnv, getStringEnv } from "./helper";
-
+import { getNumberEnv, getStringArrayEnv, getStringEnv } from './helper';
 
 export default () => ({
   database: {
-    url:getStringEnv('DATABASE_URL'),
+    url: getStringEnv('DATABASE_URL'),
   },
   kafka: {
     brokers: getStringArrayEnv('KAFKA_BROKERS'),

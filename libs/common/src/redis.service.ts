@@ -4,7 +4,7 @@ import { ConfigService } from '../config/config.service';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-  private client: Redis
+  private client: Redis;
 
   constructor(private configService: ConfigService) {
     this.client = new Redis(this.configService.redis.url);

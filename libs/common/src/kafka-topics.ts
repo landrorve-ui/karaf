@@ -31,7 +31,9 @@ export async function ensureKafkaTopics(
   await admin.connect();
   try {
     const existing = new Set(await admin.listTopics());
-    const missingTopics = normalizedTopics.filter((topic) => !existing.has(topic));
+    const missingTopics = normalizedTopics.filter(
+      (topic) => !existing.has(topic),
+    );
 
     if (missingTopics.length > 0) {
       await admin.createTopics({

@@ -25,7 +25,12 @@ export class DeviceMonitoringService
     private readonly kafkaProducer: KafkaProducerService,
     private readonly configService: ConfigService,
   ) {
-    super('device-monitoring', 'device-monitoring', kafkaProducer, configService);
+    super(
+      'device-monitoring',
+      'device-monitoring',
+      kafkaProducer,
+      configService,
+    );
     this.interval = setInterval(() => {
       void this.emitOfflineDevices();
     }, 5_000);
@@ -48,12 +53,17 @@ export class DeviceMonitoringService
       return;
     }
 
-      await this.redis.connection
-        .multi()
-        .set(key, String(event.timestamp), 'EX', this.configService.device.statusTtlSeconds)
-        .zadd(this.staleSetKey, event.timestamp, event.deviceId)
-        .srem(this.offlineSetKey, event.deviceId)
-        .exec();
+    await this.redis.connection
+      .multi()
+      .set(
+        key,
+        String(event.timestamp),
+        'EX',
+        this.configService.device.statusTtlSeconds,
+      )
+      .zadd(this.staleSetKey, event.timestamp, event.deviceId)
+      .srem(this.offlineSetKey, event.deviceId)
+      .exec();
 
     await this.emitStatus({
       deviceId: event.deviceId,
@@ -63,7 +73,8 @@ export class DeviceMonitoringService
   }
 
   private async emitOfflineDevices(): Promise<void> {
-    const cutoff = Date.now() - this.configService.device.statusTtlSeconds * 1000;
+    const cutoff =
+      Date.now() - this.configService.device.statusTtlSeconds * 1000;
     const deviceIds = await this.redis.connection.zrangebyscore(
       this.staleSetKey,
       0,
@@ -74,7 +85,9 @@ export class DeviceMonitoringService
     );
 
     for (const deviceId of deviceIds) {
-      const lastSeen = await this.redis.connection.get(this.deviceKey(deviceId));
+      const lastSeen = await this.redis.connection.get(
+        this.deviceKey(deviceId),
+      );
       if (lastSeen && Number(lastSeen) > cutoff) {
         continue;
       }
@@ -107,7 +120,10 @@ export class DeviceMonitoringService
       deviceId: event.deviceId,
       timestamp: event.timestamp,
     });
-    await this.redis.connection.publish(DEVICE_STATUS_CHANNEL, JSON.stringify(event));
+    await this.redis.connection.publish(
+      DEVICE_STATUS_CHANNEL,
+      JSON.stringify(event),
+    );
   }
 
   private deviceKey(deviceId: string): string {

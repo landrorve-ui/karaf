@@ -1,10 +1,19 @@
-import { BadRequestException, Controller, Get, Headers, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { requestIdFromHeaders } from '@lib/common';
 import { DashboardServiceService } from './dashboard-service.service';
 
 @Controller()
 export class DashboardServiceController {
-  constructor(private readonly dashboardServiceService: DashboardServiceService) {}
+  constructor(
+    private readonly dashboardServiceService: DashboardServiceService,
+  ) {}
 
   @Get()
   health(): { status: string; service: string } {
@@ -40,7 +49,9 @@ export class DashboardServiceController {
 
   @Post('aggregations/run')
   async runAggregations(@Headers() headers: Record<string, unknown>) {
-    return this.dashboardServiceService.runAggregations(requestIdFromHeaders(headers));
+    return this.dashboardServiceService.runAggregations(
+      requestIdFromHeaders(headers),
+    );
   }
 
   private parseDate(value: string | undefined, fallback: Date): Date {

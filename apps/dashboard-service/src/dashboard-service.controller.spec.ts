@@ -20,7 +20,9 @@ describe('DashboardServiceController', () => {
       ],
     }).compile();
 
-    dashboardServiceController = app.get<DashboardServiceController>(DashboardServiceController);
+    dashboardServiceController = app.get<DashboardServiceController>(
+      DashboardServiceController,
+    );
   });
 
   describe('root', () => {

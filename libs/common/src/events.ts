@@ -43,7 +43,9 @@ export interface TelemetryPresenceEvent {
 
 export type TelemetryEvent = TelemetryTemperatureEvent | TelemetryPresenceEvent;
 
-export function assertRecord(value: unknown): asserts value is Record<string, unknown> {
+export function assertRecord(
+  value: unknown,
+): asserts value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('event payload must be an object');
   }

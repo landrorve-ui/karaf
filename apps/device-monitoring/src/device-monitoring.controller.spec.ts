@@ -9,7 +9,9 @@ describe('DeviceMonitoringController', () => {
       controllers: [DeviceMonitoringController],
     }).compile();
 
-    deviceMonitoringController = app.get<DeviceMonitoringController>(DeviceMonitoringController);
+    deviceMonitoringController = app.get<DeviceMonitoringController>(
+      DeviceMonitoringController,
+    );
   });
 
   describe('root', () => {
