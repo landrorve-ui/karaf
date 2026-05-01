@@ -1,0 +1,50 @@
+name: Test service
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  setup:
+    uses: ./.github/workflows/setup.yml
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/test_db
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # PHẢI CÓ: Để lấy code và file prisma
+
+      - name: Setup Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm # Sẽ lấy lại cache từ job setup, rất nhanh
+
+      - name: Install deps
+        run: npm ci # PHẢI CÓ: Để có node_modules cho Prisma và Jest
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy
+
+      - name: Run tests
+        run: npm run test

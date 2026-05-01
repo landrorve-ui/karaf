@@ -1,0 +1,19 @@
+name: Setup Service
+on:
+  workflow_call: # Chỉ cần workflow_call nếu dùng làm "hàm" bổ trợ
+
+jobs:
+  setup-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
