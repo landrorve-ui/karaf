@@ -39,7 +39,12 @@ export class DashboardServiceService
     kafkaProducer: KafkaProducerService,
     private readonly configService: ConfigService,
   ) {
-    super('dashboard-service', 'dashboard-service', kafkaProducer, configService);
+    super(
+      'dashboard-service',
+      'dashboard-service',
+      kafkaProducer,
+      configService,
+    );
     this.aggregateInterval = setInterval(() => {
       void this.runAggregations('timer');
     }, 60_000);
@@ -50,7 +55,8 @@ export class DashboardServiceService
       {
         topic: KAFKA_TOPICS.telemetryTemperature,
         validate: validateTemperature,
-        handle: (event: TelemetryTemperatureEvent) => this.ingestTemperature(event),
+        handle: (event: TelemetryTemperatureEvent) =>
+          this.ingestTemperature(event),
       },
       {
         topic: KAFKA_TOPICS.telemetryPresence,
@@ -105,7 +111,7 @@ export class DashboardServiceService
         );
         await this.redis.connection.setex(
           cacheKey,
-          this.configService.dashboard.cacheTtlSeconds,
+          this.configService.service.cacheTtlSeconds,
           JSON.stringify(rows),
         );
         return rows;
@@ -138,7 +144,9 @@ export class DashboardServiceService
     );
   }
 
-  async runAggregations(source: string): Promise<{ temperature: number; roomUsage: number }> {
+  async runAggregations(
+    source: string,
+  ): Promise<{ temperature: number; roomUsage: number }> {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const startedAt = Date.now();
     const [temperature, roomUsage] = await Promise.all([

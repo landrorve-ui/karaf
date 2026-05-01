@@ -83,7 +83,8 @@
     ],
     "moduleNameMapper": {
       "^@db/database(|/.*)$": "<rootDir>/libs/database/src/$1",
-      "^@lib/common(|/.*)$": "<rootDir>/libs/common/src/$1"
+      "^@lib/common(|/.*)$": "<rootDir>/libs/common/src/$1",
+      "^libs/common/config/(.*)$": "<rootDir>/libs/common/config/$1"
     }
   }
 }

@@ -1,0 +1,18 @@
+# Keep local dependencies and build output out of the Docker build context.
+node_modules
+dist
+coverage
+
+# Keep Git metadata and editor files out of the image build context.
+.git
+.github
+.idea
+.vscode
+
+# Keep environment files local to the developer or CI runtime.
+.env
+.env.*
+
+# Keep docs and task notes out of the image build context.
+docs
+tasks

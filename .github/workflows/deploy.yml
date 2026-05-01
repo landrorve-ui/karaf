@@ -1,0 +1,107 @@
+name: Deploy Services
+
+on:
+  # Deploy automatically from the default branch after code lands.
+  push:
+    branches:
+      - main
+  # Allow operators to trigger the same deployment flow manually when needed.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      # Allow GitHub Actions to request short-lived AWS credentials via OIDC.
+      id-token: write
+      # Allow the workflow to read repository contents during checkout.
+      contents: read
+    env:
+      # Reuse the commit SHA as an immutable image tag for traceability.
+      IMAGE_TAG: ${{ github.sha }}
+      # Pull deployment settings from repository variables so the workflow stays reusable.
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_DASHBOARD_REPOSITORY: ${{ vars.ECR_DASHBOARD_REPOSITORY }}
+      ECR_DEVICE_MONITORING_REPOSITORY: ${{ vars.ECR_DEVICE_MONITORING_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_DASHBOARD_SERVICE: ${{ vars.ECS_DASHBOARD_SERVICE }}
+      ECS_DEVICE_MONITORING_SERVICE: ${{ vars.ECS_DEVICE_MONITORING_SERVICE }}
+
+    steps:
+      # Fetch the repository so every later step works against the exact commit being deployed.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install the requested Node version and enable npm dependency caching.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Install dependencies from the lockfile so lint, tests, and Docker builds use reproducible inputs.
+      - name: Install dependencies
+        run: npm ci
+
+      # Run linting early so style and static analysis failures stop the deployment quickly.
+      - name: Lint code
+        run: npm run lint
+
+      # Run the automated test suite before building images so only verified code is shipped.
+      - name: Run tests
+        run: npm test -- --runInBand
+
+      # Configure short-lived AWS credentials instead of storing long-lived access keys in GitHub.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Authenticate Docker to Amazon ECR so the next steps can push built images.
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Prepare Docker Buildx so multi-stage image builds use the modern builder backend in CI.
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and push the dashboard image with both an immutable SHA tag and a rolling latest tag.
+      - name: Build and push dashboard-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/dashboard-service/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_DASHBOARD_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_DASHBOARD_REPOSITORY }}:latest
+
+      # Build and push the device-monitoring image with matching immutable and rolling tags.
+      - name: Build and push device-monitoring image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/device-monitoring/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_DEVICE_MONITORING_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_DEVICE_MONITORING_REPOSITORY }}:latest
+
+      # Trigger a new ECS rollout after pushing images.
+      # This assumes each ECS service task definition already references the :latest tag for its container image.
+      - name: Deploy dashboard-service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_DASHBOARD_SERVICE" \
+            --force-new-deployment
+
+      # Trigger the same rolling deployment for the device-monitoring service.
+      - name: Deploy device-monitoring service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_DEVICE_MONITORING_SERVICE" \
+            --force-new-deployment
