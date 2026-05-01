@@ -1,0 +1,30 @@
+name: Build Service
+on:
+  workflow_run:
+    workflows: ["Setup Service"] # Chỉ chạy khi workflow Setup Service chạy xong, lấy được image_tag từ đó
+    types:
+      - completed
+
+jobs:
+  build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build
+        run: echo "building image"

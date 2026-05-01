@@ -1,4 +1,4 @@
-name: Test service
+name: Test Service
 on:
   push:
     branches: [main]
