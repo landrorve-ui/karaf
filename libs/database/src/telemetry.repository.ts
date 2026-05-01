@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, TelemetryType } from '@prisma/client';
 import { DatabaseService } from './database.service';
+import { Prisma, TelemetryType } from './prisma-client';
 
 export interface StoreTelemetryInput {
   consumer: string;

@@ -35,15 +35,15 @@ export async function logOperation<T>(
     });
     return result;
   } catch (error) {
-    logger.error({
-      operation,
-      requestId: context.requestId,
-      deviceId: context.deviceId,
-      latency: Date.now() - startedAt,
-      status: 'error',
-      error: error instanceof Error ? error.message : String(error),
-      ...context,
-    });
+    // logger.error({
+    //   operation,
+    //   requestId: context.requestId,
+    //   deviceId: context.deviceId,
+    //   latency: Date.now() - startedAt,
+    //   status: 'error',
+    //   error: error instanceof Error ? error.message : String(error),
+    //   ...context,
+    // });
     throw error;
   }
 }

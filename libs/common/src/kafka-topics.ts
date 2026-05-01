@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
 import { Kafka } from 'kafkajs';
-import { getKafkaBrokers } from './env';
 
 const logger = new Logger('KafkaTopics');
 
@@ -15,6 +14,7 @@ function delay(ms: number): Promise<void> {
 export async function ensureKafkaTopics(
   clientId: string,
   topics: string[],
+  brokers: string[],
 ): Promise<void> {
   const normalizedTopics = unique(topics);
   if (normalizedTopics.length === 0) {
@@ -23,7 +23,7 @@ export async function ensureKafkaTopics(
 
   const kafka = new Kafka({
     clientId,
-    brokers: getKafkaBrokers(),
+    brokers: brokers,
     retry: { retries: 5 },
   });
   const admin = kafka.admin();

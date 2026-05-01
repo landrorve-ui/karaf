@@ -1,9 +1,9 @@
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Consumer, EachMessagePayload, Kafka } from 'kafkajs';
 import { getDlqTopic } from './events';
-import { getKafkaBrokers } from './env';
 import { KafkaProducerService } from './kafka-producer.service';
 import { ensureKafkaTopics } from './kafka-topics';
+import { ConfigService } from '../config/config.service';
 
 export interface KafkaTopicHandler<T> {
   topic: string;
@@ -19,10 +19,12 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
     private readonly clientId: string,
     groupId: string,
     private readonly producer: KafkaProducerService,
+    private readonly configSvc: ConfigService,
   ) {
+    console.log(`kafka config: ${JSON.stringify(this.configSvc.kafka)}`);
     const kafka = new Kafka({
       clientId,
-      brokers: getKafkaBrokers(),
+      brokers: this.configSvc.kafka.brokers,
       retry: { retries: 5 },
     });
     this.consumer = kafka.consumer({ groupId });
@@ -36,7 +38,7 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
     await ensureKafkaTopics(`${this.clientId}-admin`, [
       ...topics,
       ...topics.map((topic) => getDlqTopic(topic)),
-    ]);
+    ], this.configSvc.kafka.brokers);
     await this.consumer.connect();
     for (const handler of handlers) {
       await this.consumer.subscribe({ topic: handler.topic, fromBeginning: false });
@@ -79,15 +81,15 @@ export abstract class KafkaConsumerBase implements OnModuleInit, OnModuleDestroy
         status: 'ok',
       });
     } catch (error) {
-      this.logger.error({
-        operation: 'kafka.consume',
-        topic: payload.topic,
-        requestId,
-        deviceId,
-        latency: Date.now() - startedAt,
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error),
-      });
+      // this.logger.error({
+      //   operation: 'kafka.consume',
+      //   topic: payload.topic,
+      //   requestId,
+      //   deviceId,
+      //   latency: Date.now() - startedAt,
+      //   status: 'error',
+      //   error: error instanceof Error ? error.message : String(error),
+      // });
       await this.sendToDlq(payload, error);
     }
   }

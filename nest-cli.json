@@ -46,6 +46,15 @@
         "tsConfigPath": "apps/device-monitoring/tsconfig.app.json"
       }
     },
+    "mock-data": {
+      "type": "application",
+      "root": "apps/mock-data",
+      "entryFile": "main",
+      "sourceRoot": "apps/mock-data/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/mock-data/tsconfig.app.json"
+      }
+    },
     "kafka": {
       "type": "application",
       "root": "apps/kafka",

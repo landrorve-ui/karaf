@@ -1,6 +1,5 @@
 export * from './common.module';
 export * from './common.service';
-export * from './env';
 export * from './events';
 export * from './kafka-consumer.base';
 export * from './kafka-producer.service';

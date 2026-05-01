@@ -1,18 +1,18 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Kafka, Producer } from 'kafkajs';
-import { getKafkaBrokers } from './env';
 import { getDlqTopic, getKnownKafkaTopics } from './events';
 import { ensureKafkaTopics } from './kafka-topics';
+import { ConfigService } from '../config/config.service';
 
 @Injectable()
 export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(KafkaProducerService.name);
   private readonly producer: Producer;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     const kafka = new Kafka({
       clientId: 'iot-producer',
-      brokers: getKafkaBrokers(),
+      brokers: this.configService.kafka.brokers,
     });
     this.producer = kafka.producer();
   }
@@ -22,7 +22,7 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
     await ensureKafkaTopics('iot-producer-admin', [
       ...topics,
       ...topics.map((topic) => getDlqTopic(topic)),
-    ]);
+    ], this.configService.kafka.brokers);
     await this.producer.connect();
   }
 

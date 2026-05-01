@@ -7,16 +7,15 @@ import {
   KafkaProducerService,
   KAFKA_TOPICS,
   RedisService,
-  getNumberEnv,
   validateDevicePing,
 } from '@lib/common';
+import { ConfigService } from 'libs/common/config/config.service';
 
 @Injectable()
 export class DeviceMonitoringService
   extends KafkaConsumerBase
   implements OnModuleDestroy
 {
-  private readonly ttlSeconds = getNumberEnv('DEVICE_STATUS_TTL_SECONDS', 30);
   private readonly staleSetKey = 'devices:lastSeen';
   private readonly offlineSetKey = 'devices:offlineEmitted';
   private readonly interval: NodeJS.Timeout;
@@ -24,8 +23,9 @@ export class DeviceMonitoringService
   constructor(
     private readonly redis: RedisService,
     private readonly kafkaProducer: KafkaProducerService,
+    private readonly configService: ConfigService,
   ) {
-    super('device-monitoring', 'device-monitoring', kafkaProducer);
+    super('device-monitoring', 'device-monitoring', kafkaProducer, configService);
     this.interval = setInterval(() => {
       void this.emitOfflineDevices();
     }, 5_000);
@@ -48,12 +48,12 @@ export class DeviceMonitoringService
       return;
     }
 
-    await this.redis.connection
-      .multi()
-      .set(key, String(event.timestamp), 'EX', this.ttlSeconds)
-      .zadd(this.staleSetKey, event.timestamp, event.deviceId)
-      .srem(this.offlineSetKey, event.deviceId)
-      .exec();
+      await this.redis.connection
+        .multi()
+        .set(key, String(event.timestamp), 'EX', this.configService.device.statusTtlSeconds)
+        .zadd(this.staleSetKey, event.timestamp, event.deviceId)
+        .srem(this.offlineSetKey, event.deviceId)
+        .exec();
 
     await this.emitStatus({
       deviceId: event.deviceId,
@@ -63,7 +63,7 @@ export class DeviceMonitoringService
   }
 
   private async emitOfflineDevices(): Promise<void> {
-    const cutoff = Date.now() - this.ttlSeconds * 1000;
+    const cutoff = Date.now() - this.configService.device.statusTtlSeconds * 1000;
     const deviceIds = await this.redis.connection.zrangebyscore(
       this.staleSetKey,
       0,
@@ -83,6 +83,7 @@ export class DeviceMonitoringService
         this.offlineSetKey,
         deviceId,
       );
+
       await this.redis.connection.zrem(this.staleSetKey, deviceId);
       if (firstOfflineEmission === 0) {
         continue;

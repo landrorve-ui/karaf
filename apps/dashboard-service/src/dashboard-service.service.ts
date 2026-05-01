@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { TelemetryType } from '@prisma/client';
 import {
   KafkaConsumerBase,
   KafkaProducerService,
@@ -7,12 +6,12 @@ import {
   RedisService,
   TelemetryPresenceEvent,
   TelemetryTemperatureEvent,
-  getNumberEnv,
   logOperation,
   validatePresence,
   validateTemperature,
 } from '@lib/common';
-import { TelemetryRepository } from '@db/database';
+import { TelemetryRepository, TelemetryType } from '@db/database';
+import { ConfigService } from 'libs/common/config/config.service';
 
 interface TemperatureQuery {
   requestId: string;
@@ -32,15 +31,15 @@ export class DashboardServiceService
   implements OnModuleDestroy
 {
   private readonly apiLogger = new Logger(DashboardServiceService.name);
-  private readonly cacheTtlSeconds = getNumberEnv('DASHBOARD_CACHE_TTL_SECONDS', 120);
   private readonly aggregateInterval: NodeJS.Timeout;
 
   constructor(
     private readonly telemetryRepository: TelemetryRepository,
     private readonly redis: RedisService,
     kafkaProducer: KafkaProducerService,
+    private readonly configService: ConfigService,
   ) {
-    super('dashboard-service', 'dashboard-service', kafkaProducer);
+    super('dashboard-service', 'dashboard-service', kafkaProducer, configService);
     this.aggregateInterval = setInterval(() => {
       void this.runAggregations('timer');
     }, 60_000);
@@ -106,7 +105,7 @@ export class DashboardServiceService
         );
         await this.redis.connection.setex(
           cacheKey,
-          this.cacheTtlSeconds,
+          this.configService.dashboard.cacheTtlSeconds,
           JSON.stringify(rows),
         );
         return rows;
@@ -131,7 +130,7 @@ export class DashboardServiceService
         const rows = await this.telemetryRepository.getRoomUsage(query.date);
         await this.redis.connection.setex(
           cacheKey,
-          this.cacheTtlSeconds,
+          this.configService.service.cacheTtlSeconds,
           JSON.stringify(rows),
         );
         return rows;
